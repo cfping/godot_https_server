@@ -5,37 +5,31 @@ use tokio_rustls::TlsAcceptor;
 use rcgen::generate_simple_self_signed;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile;
-use mime_guess::from_path; // 新增：MIME类型自动检测
+use mime_guess::from_path;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. 证书路径设置
+    // 1. 证书管理
     let cert_path = "cert.pem";
     let key_path = "key.pem";
     
-    // 2. 自动生成证书（如果不存在）
     if !Path::new(cert_path).exists() || !Path::new(key_path).exists() {
-        println!("⚠️ 未找到证书文件，正在生成新的自签名证书...");
+        println!("⚠️ Generating self-signed certificate...");
         generate_self_signed_cert(cert_path, key_path)?;
-        println!("✅ 已生成新的自签名证书");
+        println!("✅ Certificate generated");
     }
-    
-    // 3. 加载TLS材料
+    // 2. TLS配置
     let (certs, key) = load_tls_materials(cert_path, key_path)?;
-    
-    // 4. 配置TLS
     let tls_config = ServerConfig::builder()
         .with_safe_defaults()
         .with_no_client_auth()
         .with_single_cert(certs, key)?;
-    
-    // 5. 创建服务
+    // 3. 服务启动
     let service = service_fn(handle_request);
     let tls_acceptor = Arc::new(TlsAcceptor::from(Arc::new(tls_config)));
-    
-    // 6. 启动服务器
     let tcp_listener = TcpListener::bind("0.0.0.0:8443").await?;
-    println!("🚀 HTTPS服务器运行在: https://localhost:8443");
     
+    println!("🚀 Server running at: https://localhost:8443");
+    println!("🔉 Audio mode control: https://localhost:8443?audio=worklet|legacy");
     loop {
         let (tcp_stream, _) = tcp_listener.accept().await?;
         let tls_acceptor = tls_acceptor.clone();
@@ -46,63 +40,135 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(tls_stream) => {
                     if let Err(e) = Http::new()
                         .serve_connection(tls_stream, service)
-                        .await
-                    {
-                        eprintln!("🔴 连接处理错误: {}", e);
+                        .await {
+                        eprintln!("Connection error: {}", e);
                     }
                 }
-                Err(e) => eprintln!("🔴 TLS握手失败: {}", e),
+                Err(e) => eprintln!("TLS handshake failed: {}", e),
             }
         });
     }
 }
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let path = req.uri().path();
+    let query = req.uri().query().unwrap_or_default();
     let file_path = match path {
         "/" => "index.html",
         _ => path.trim_start_matches('/'),
     };
+    // 读取文件内容
+    let file_content = tokio::fs::read_to_string(file_path).await;
     
-    // 尝试打开文件
-    let file_result = File::open(file_path).await;
-    
-    // 构建基础响应
-    let mut response = match file_result {
-        Ok(file) => {
-            let stream = tokio_util::io::ReaderStream::new(file);
-            Response::new(Body::wrap_stream(stream))
+    let mut response = match file_content {
+        Ok(mut content) => {
+            if file_path.ends_with(".html") {
+                inject_audio_script(&mut content, query);
+            }
+            Response::new(Body::from(content))
         }
-        Err(_) => Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from("404 Not Found"))
-            .unwrap(),
+        Err(_) => match File::open(file_path).await {
+            Ok(file) => {
+                let stream = tokio_util::io::ReaderStream::new(file);
+                Response::new(Body::wrap_stream(stream))
+            }
+            Err(_) => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("404 Not Found"))
+                .unwrap(),
+        },
     };
-    // 获取响应头的可变引用
+    // 头信息设置
     let headers = response.headers_mut();
-    // 关键：添加Godot Web导出必需的安全头
-    headers.insert(
-        "Cross-Origin-Opener-Policy",
-        "same-origin".parse().unwrap(),
-    );
-    headers.insert(
-        "Cross-Origin-Embedder-Policy",
-        "require-corp".parse().unwrap(),
-    );
-    // 优化：自动设置MIME类型
+    headers.insert("Cross-Origin-Opener-Policy", "same-origin".parse().unwrap());
+    headers.insert("Cross-Origin-Embedder-Policy", "require-corp".parse().unwrap());
     if let Some(mime) = from_path(file_path).first() {
-        headers.insert(
-            "Content-Type",
-            mime.to_string().parse().unwrap(),
-        );
+        headers.insert("Content-Type", mime.to_string().parse().unwrap());
     }
-    // 优化：静态资源缓存控制
     if !file_path.ends_with(".html") {
-        headers.insert(
-            "Cache-Control",
-            "public, max-age=86400".parse().unwrap(), // 缓存1天
-        );
+        headers.insert("Cache-Control", "public, max-age=86400".parse().unwrap());
+    } else {
+        headers.remove("Cache-Control"); // 开发阶段禁用HTML缓存
     }
     Ok(response)
+}
+fn inject_audio_script(html: &mut String, query_params: &str) {
+    const AUDIO_SCRIPT: &str = r#"
+    <script type="module">
+    (() => {
+        // 配置参数
+        const config = {
+            debug: true,
+            defaultMode: 'worklet',
+            fallbackTimeout: 1500,
+            godot4Selector: '#godot-canvas',
+            godot3Selector: 'body'
+        };
+        
+        // 从URL参数解析设置
+        const params = new URLSearchParams(location.search);
+        const forceMode = params.get('audio');
+        const useWorklet = forceMode 
+            ? forceMode === 'worklet' 
+            : config.defaultMode === 'worklet';
+        
+        // 性能监控
+        const perfMark = (name) => config.debug && performance.mark(`audio_${name}`);
+        
+        // 初始化音频上下文
+        const initAudio = () => {
+            perfMark('init_start');
+            
+            const audio = document.createElement('audio');
+            audio.setAttribute('context', useWorklet ? 'worklet' : 'scriptprocessor');
+            
+            // 自动检测Godot版本
+            const mountPoint = document.querySelector(config.godot4Selector) 
+                || document.querySelector(config.godot3Selector);
+            
+            if (mountPoint) {
+                mountPoint.appendChild(audio);
+                
+                // Worklet错误处理
+                if (useWorklet) {
+                    audio.onerror = () => {
+                        console.warn('[Audio] Worklet failed, falling back');
+                        location.search = '?audio=legacy';
+                    };
+                }
+                
+                perfMark('init_end');
+                if (config.debug) {
+                    const measure = performance.measure(
+                        'audio_init', 
+                        'audio_init_start', 
+                        'audio_init_end'
+                    );
+                    console.log(`[Audio] Initialized in ${measure.duration.toFixed(2)}ms`);
+                }
+            }
+        };
+        
+        // 延迟初始化避免阻塞
+        setTimeout(initAudio, config.fallbackTimeout);
+        
+        // Godot引擎加载事件
+        if (typeof Engine !== 'undefined') {
+            Engine.on('started', () => {
+                console.log('[Audio] Godot engine ready');
+                initAudio();
+            });
+        }
+    })();
+    </script>
+    "#;
+    if let Some(pos) = html.find("</head>") {
+        html.insert_str(pos, AUDIO_SCRIPT);
+        
+        // 开发模式提示
+        if html.contains("<!--DEVMODE-->") {
+            html.insert_str(pos, r#"<script>console.log('[Dev] Audio script injected');</script>"#);
+        }
+    }
 }
 fn generate_self_signed_cert(cert_path: &str, key_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let subject_alt_names = vec!["localhost".to_string(), "127.0.0.1".to_string()];
@@ -118,7 +184,6 @@ fn generate_self_signed_cert(cert_path: &str, key_path: &str) -> Result<(), Box<
     Ok(())
 }
 fn load_tls_materials(cert_path: &str, key_path: &str) -> Result<(Vec<Certificate>, PrivateKey), Box<dyn std::error::Error>> {
-    // 加载证书
     let cert_file = fs::read(cert_path)?;
     let mut cert_reader = std::io::Cursor::new(cert_file);
     let certs = rustls_pemfile::certs(&mut cert_reader)?
@@ -126,7 +191,6 @@ fn load_tls_materials(cert_path: &str, key_path: &str) -> Result<(Vec<Certificat
         .map(Certificate)
         .collect();
     
-    // 加载私钥
     let key_bytes = fs::read(key_path)?;
     let mut key_reader = std::io::Cursor::new(key_bytes);
     
@@ -145,7 +209,7 @@ fn load_tls_materials(cert_path: &str, key_path: &str) -> Result<(Vec<Certificat
                 .ok()
                 .and_then(|mut keys| keys.pop())
         })
-        .ok_or("无法解析私钥：不是有效的PKCS8/RSA/EC格式")?;
+        .ok_or("Failed to parse private key")?;
     
     Ok((certs, PrivateKey(private_key)))
 }
