@@ -1,0 +1,4 @@
+[target.x86_64-unknown-linux-gnu]
+image = "cross-build"
+# image = "cross-build-centos"
+platform = "linux/amd64"  # 强制使用 x86_64
