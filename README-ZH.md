@@ -1,78 +1,79 @@
-# Godot 网页服务器 🚀
+# Godot Web Server 🚀
 
-**专为 Godot Web 导出优化的 HTTPS 服务器**，支持智能音频模式切换、性能监控和开发者友好功能
-![License](https://img.shields.io/badge/license-MIT-blue)
+## Live Demo
 
-## ✨ 核心功能
+Access our test server at:
+👉 [https://114.55.90.171:8443](https://114.55.90.171:8443)
 
-- 🔒 **自动 HTTPS** - 自签名证书一键生成
-- 🎵 **智能音频模式** - 自动切换 Worklet/ScriptProcessor
-- 📊 **性能监控** - 控制台实时显示加载指标
-- 🛠️ **开发者工具** - 调试模式自动检测
-- 🌐 **跨域隔离** - 完美支持 Godot WebAssembly
-- ⚡ **开箱即用** - 适配 Godot 3.5+/4.x 网页导出
+## ✨ Key Features
 
-## 🚀 快速开始
+- 🔒 **Auto HTTPS** - Self-signed certificate generation
+- 🎵 **Smart Audio Mode** - Auto-switch between Worklet/ScriptProcessor
+- 📊 **Performance Monitoring** - Real-time console metrics
+- 🛠️ **Developer Tools** - Debug mode detection
+- 🌐 **Cross-Origin Isolation** - Full WebAssembly support
+- ⚡ **Zero Configuration** - Works with Godot 3.5+/4.x web exports
 
-### 环境准备
+## 🚀 Quick Start
+
+### Prerequisites
 
 - Rust 1.70+ (`rustup install stable`)
-- Godot 3.5+ 或 4.x 网页导出
+- Godot 3.5+ or 4.x with Web export
 
 ```bash
-# 克隆并运行
-git clonehttps://github.com/cfping/godot_https_server.git
+# Clone and run
+git clone https://github.com/cfping/godot_https_server.git
 cd godot-web-server
 cargo run --release
 ```
 
-访问你的游戏：
+Access your game at:
 👉 [https://localhost:8443](https://localhost:8443)
 
+### Server Parameters
 
-### 服务器参数
+| Parameter          | Description                  | Default |
+|--------------------|------------------------------|---------|
+| `?audio=worklet`  | Force AudioWorklet mode      | Auto    |
+| `?audio=legacy`   | Force ScriptProcessor mode   | Auto    |
+| `#debug`          | Enable performance logging   | Off     |
 
-| 参数                | 说明                     | 默认值  |
-|---------------------|--------------------------|---------|
-| `?audio=worklet`   | 强制使用 AudioWorklet    | 自动    |
-| `?audio=legacy`    | 强制使用 ScriptProcessor | 自动    |
-| `#debug`           | 启用性能日志             | 关闭    |
+## 📦 Deployment
 
-## 📦 部署流程
-
-### 1. 导出游戏
+### 1. Export Your Game
 
 ```bash
-godot --export-release "Web" 导出目录路径
+godot --export-release "Web" /path/to/export
 ```
 
-### 2. 准备文件
+### 2. Prepare Files
 
 ```bash
-cp -r 导出目录路径/* godot-web-server/
+cp -r /path/to/export/* godot-web-server/
 ```
 
-### 3. 生产环境运行
+### 3. Production Run
 
 ```bash
-# 编译发布版
+# Build release
 cargo build --release
-# 启动服务（绑定443端口）
+# Start server (port 443)
 sudo ./target/release/godot-web-server
 ```
 
-## 🎛️ 高级用法
+## 🎛️ Advanced Usage
 
-### 自定义SSL证书
+### Custom SSL Certificates
 
-替换自动生成的证书：
+Replace auto-generated certs:
 
 ```bash
-# Let's Encrypt 示例
+# Let's Encrypt example
 cp /etc/letsencrypt/live/yourdomain.com/{cert.pem,key.pem} .
 ```
 
-### Docker 部署
+### Docker Deployment
 
 ```dockerfile
 FROM rust:1.70 as builder
@@ -85,56 +86,90 @@ COPY ./export /var/www
 CMD ["godot-web-server"]
 ```
 
-## 🧑‍💻 开发模式
+## 🧑‍💻 Development Mode
 
-### 启用调试
+### Enable Debugging
 
-在HTML中添加标记：
+Add to your HTML:
 
 ```html
 <!--DEVMODE-->
 ```
 
-将激活：
+Enables:
 
-- 实时重载检测
-- 详细控制台日志
-- 缓存绕过
+- Live reload
+- Detailed console logs
+- Cache bypass
 
-### 音频模式测试
+### Audio Mode Testing
 
-| 网址                                | 用途                  |
-|-------------------------------------|-----------------------|
-| `https://localhost:8443`           | 自动检测              |
-| `https://localhost:8443?audio=worklet#debug` | 调试Worklet模式       |
-| `https://localhost:8443?audio=legacy`       | 强制传统音频模式      |
+| URL | Purpose |
+|-----|---------|
+| `https://localhost:8443` | Auto-detect |
+| `https://localhost:8443?audio=worklet#debug` | Debug Worklet |
+| `https://localhost:8443?audio=legacy` | Force legacy |
 
-## ⚠️ 常见问题
+## ⚠️ Troubleshooting
 
-### 问题排查
+### Common Issues
 
-1. **混合内容错误**
-   确保所有资源使用 `https://`
-2. **iOS音频问题**
-   在Godot项目中添加：
+1. **Mixed Content Errors**
+   Ensure all resources use `https://`
+2. **iOS Audio Issues**
+   Add to your Godot project:
 
    ```gdscript
-   # 在自动加载脚本中
+   # In autoload script
    func _ready():
        OS.set_environment("WEB_AUDIO_CONTEXT", "worklet" if OS.has_feature("web") else "")
    ```
 
-3. **证书警告**
-   开发环境手动信任证书：
+3. **Certificate Warnings**
+   For development, trust the cert manually:
 
    ```bash
-   # Linux系统
+   # Linux systems
    sudo cp cert.pem /usr/local/share/ca-certificates/godot-dev.crt
    sudo update-ca-certificates
    ```
 
-## 📜 开源协议
+## 📜 License
 
-MIT 许可证 - 详见 [LICENSE](LICENSE)
-
+MIT License - See [LICENSE](LICENSE)
 ---
+
+### Testing Notes
+
+Try these test cases on our demo server:
+
+1. **Basic Functionality**
+   - Verify HTTPS connection
+   - Check cross-origin isolation
+   - Monitor audio mode selection in console
+2. **Performance Test**
+
+   ```javascript
+   console.time('Godot Load');
+   window.addEventListener('godot-loaded', () => {
+     console.timeEnd('Godot Load');
+     console.log('Memory usage:', performance.memory);
+   });
+   ```
+
+3. **Audio Mode Tests**
+   - [Worklet Mode](https://114.55.90.171:8443?audio=worklet)
+   - [Legacy Mode](https://114.55.90.171:8443?audio=legacy)
+4. **Debug Mode**
+   Append `#debug` to URL for detailed logs
+Report issues with:
+
+1. Browser version
+
+2. Console errors
+
+3. Network timing screenshots
+
+4. Reproduction steps
+
+Note: Demo server uses self-signed certs - accept the security warning when testing.
