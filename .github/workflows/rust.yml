@@ -1,57 +1,23 @@
-name: Multi-platform Build
+github
+name: Rust
+
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
+
 env:
   CARGO_TERM_COLOR: always
+
 jobs:
   build:
-    strategy:
-      matrix:
-        target: [
-          x86_64-pc-windows-msvc,    # Windows 64-bit
-          x86_64-unknown-linux-gnu,  # Linux 64-bit (GNU)
-          aarch64-apple-darwin       # macOS ARM64
-        ]
-    runs-on: ${{ 
-      contains(matrix.target, 'windows') && 'windows-latest' ||
-      contains(matrix.target, 'apple') && 'macos-latest' ||
-      'ubuntu-latest'
-    }}
-    
+
+    runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
-    
-    # 安装目标平台工具链
-    - name: Add target
-      run: rustup target add ${{ matrix.target }}
-    
-    # 平台特定依赖安装
-    - name: Install dependencies (Linux)
-      if: contains(matrix.target, 'linux')
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-multilib
-        
-    # 构建发布版本
-    - name: Build release
-      run: cargo build --release --target ${{ matrix.target }}
-    
-    # 打包二进制文件
-    - name: Package artifacts
-      run: |
-        mkdir -p release
-        BIN_NAME=$(basename ${{ github.workspace }})
-        if [[ "${{ matrix.target }}" == *"windows"* ]]; then
-          cp target/${{ matrix.target }}/release/$BIN_NAME.exe release/
-        else
-          cp target/${{ matrix.target }}/release/$BIN_NAME release/
-        fi
-    
-    # 上传制品
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.target }}-binaries
-        path: release/
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
