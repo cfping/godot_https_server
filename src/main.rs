@@ -91,6 +91,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible
     }
     Ok(response)
 }
+
 fn inject_audio_script(html: &mut String, query_params: &str) {
     const AUDIO_SCRIPT: &str = r#"
     <script type="module">

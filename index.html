@@ -1,10 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>测试页面</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot HTTPS Server</title>
+    <style>
+        :root {
+            --primary-color: #478cbf;
+            --secondary-color: #2a5f8a;
+            --accent-color: #fff3d5;
+            --text-color: #333333;
+            --light-bg: #f9f9f9;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            background-color: var(--accent-color);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        .code-block {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>服务器运行正常</h1>
-    <p>这是一个测试页面</p>
+    <div class="container">
+        <header>
+            <h1>Godot HTTPS Server</h1>
+            <p>A lightweight and secure HTTPS server for Godot Engine projects</p>
+        </header>
+        
+        <div class="card">
+            <h2>Welcome</h2>
+            <p>
+                This is a custom HTTPS server designed specifically for Godot Engine projects. 
+                It provides a secure way to serve your Godot web exports and handle API requests 
+                with TLS encryption.
+            </p>
+            <a href="#getting-started" class="btn">Get Started</a>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure</h3>
+                <p>Built-in HTTPS support with TLS encryption to keep your data safe</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Fast</h3>
+                <p>Lightweight implementation in Rust for optimal performance</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔌</div>
+                <h3>Easy Integration</h3>
+                <p>Seamlessly works with Godot Engine projects</p>
+            </div>
+        </div>
+        
+        <div class="card" id="getting-started">
+            <h2>Getting Started</h2>
+            <p>Follow these simple steps to set up the HTTPS server for your Godot project:</p>
+            <ol style="margin-left: 2rem; margin-top: 1rem;">
+                <li>Clone the repository</li>
+                <li>Configure your SSL certificates</li>
+                <li>Run the server</li>
+                <li>Connect from your Godot project</li>
+            </ol>
+            
+            <div class="code-block">
+                <code>
+                # Start the server<br>
+                cargo run --release
+                </code>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Configuration</h2>
+            <p>Custom HTTPS certificate path configuration:</p>
+            <div class="code-block">
+                <code>CERT_PATH=./cert.pem<br>KEY_PATH=./key.pem</code>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2023 Godot HTTPS Server | <a href="https://github.com/cfping/godot_https_server">GitHub</a></p>
+        </footer>
+    </div>
 </body>
 </html>
