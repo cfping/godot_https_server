@@ -1,5 +1,5 @@
 use hyper::{server::conn::Http, service::service_fn, Body, Request, Response, StatusCode};
-use std::{convert::Infallible, fs, net::SocketAddr, path::Path, sync::Arc};
+use std::{convert::Infallible, env, fs, net::SocketAddr, path::Path, sync::Arc};
 use tokio::{fs::File, net::TcpListener};
 use tokio_rustls::TlsAcceptor;
 use rcgen::generate_simple_self_signed;
@@ -50,10 +50,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let args: Vec<String> = env::args().collect();
+    let mut html_file = "index.html";
+
+    for index in 0..args.len() {
+        let current = &args[index];
+        let slice = current.as_str();
+
+        if slice == "--filename" || slice == "-f" {
+            html_file = args[index + 1].as_str();
+        }
+    }
+    println!("Serving HTML file: {}", html_file);
+
     let path = req.uri().path();
     let query = req.uri().query().unwrap_or_default();
     let file_path = match path {
-        "/" => "index.html",
+        "/" => html_file,
         _ => path.trim_start_matches('/'),
     };
     // 读取文件内容
