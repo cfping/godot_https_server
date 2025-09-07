@@ -58,7 +58,15 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible
         let slice = current.as_str();
 
         if slice == "--filename" || slice == "-f" {
-            html_file = args[index + 1].as_str();
+            let potential_next = args.get(index + 1);
+
+            match potential_next {
+                Some(next) => html_file = next, //use this filename
+                None => {
+                    println!("Missing filename argument.");
+                    break;
+                }
+            }
         }
     }
     println!("Serving HTML file: {}", html_file);
