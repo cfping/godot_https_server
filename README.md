@@ -67,7 +67,7 @@ Installing `godot-https-server` as a global tool allows you to serve not just a 
 
 ```
 cargo install --path .
-cd $home/Library/Caches/Godot/web/
+cd ~/.cache/godot/editor/tmp_web_export/
 ```
 
 ### Specifying a custom html file
