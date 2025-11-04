@@ -61,6 +61,24 @@ sudo ./target/release/godot-web-server
 
 ## 🎛️ Advanced Usage
 
+### Install as a global tool
+
+Installing `godot-https-server` as a global tool allows you to serve not just a Godot release build but also development builds.
+
+```
+cargo install --path .
+cd ~/.cache/godot/editor/tmp_web_export/
+```
+
+### Specifying a custom html file
+
+By default, `godot-https-server` defaults to the index.html file in the current directory where the commmand was executed. You can use the `--filename` or `-f` argument to specify a custom html file name. This is useful for serving the Godot development build folder without appending the filename to the localhost address URI.
+
+```
+cd $home/Library/Caches/Godot/web/
+godot-https-server --filename tmp_js_export.html
+```
+
 ### Custom SSL Certificates
 
 Replace the auto-generated certs:
