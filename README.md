@@ -18,7 +18,7 @@
 
 ```bash
 # Clone and run
-git clone git clonehttps://github.com/cfping/godot_https_server.git
+git clone https://github.com/cfping/godot_https_server.git
 cd godot-web-server
 cargo run --release
 ```
